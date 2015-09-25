@@ -9,13 +9,23 @@ var connectionString = (
 );
 var massiveInstance = massive.connectSync({connectionString: connectionString});
 var pg = require('pg');
+var pgClient = new pg.Client(connectionString);
+var db = null;
+
+/*********** PostgreSQL client ********/
+pgClient.connect();
+pgClient.query('LISTEN "added"');
+pgClient.on('notification', function (data) {
+    console.log('New data added: ', data.payload);
+    io.emit('added', data.payload);
+});
 
 /*********** Express setup ***********/
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(serveStatic('./public'));
 app.set('db', massiveInstance);
-var db = app.get('db');
+db = app.get('db');
 
 /*********** API routes *************/
 app.get('/api/coords', function (req, res) {
@@ -47,7 +57,9 @@ app.post('/api/coords', function (req, res) {
             throw err;
         }
 
-        io.emit('added', response);
+        var data = JSON.stringify(response);
+
+        pgClient.query(`NOTIFY "added", '${data}'`);
 
         res.json(response);
     });

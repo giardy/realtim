@@ -29,7 +29,7 @@ function getLocation (callback, errorCallback) {
         var args = {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude
-        }
+        };
 
         callback(args);
     },
